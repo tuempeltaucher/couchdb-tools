@@ -1,4 +1,5 @@
 import json
+import os
 import urllib2
 import base64
 import json
@@ -14,6 +15,21 @@ class Db():
             self.password = uri[uri.find(":", p)+1:uri.find("@")]
             uri = uri[0:p] + uri[uri.find("@")+1:]
         self.uri = uri
+        if self.username == None:
+            self.load_netrc()
+
+    def load_netrc(self):
+        f = os.path.expanduser("~") + "/.netrc"
+        if os.path.exists(f):
+            with open(f, "r") as fp:
+                line = fp.readline()
+
+                p = line.find("login ") + len("login ")
+                p1 = line.find(" ", p)
+                self.username = line[p:p1]
+
+                p = line.find("password ") + len("password ")
+                self.password = line[p:].strip()
 
     def get_request(self, method, path):
         request = urllib2.Request(self.uri + path)
@@ -48,3 +64,9 @@ class Db():
         l = json.loads(self.get("/_all_docs"))
         for r in l["rows"]:
             yield r["id"]
+
+    def fetch_all_design(self):
+        l = json.loads(self.get("/_all_docs?startkey=\"_design/\"&endkey=\"_design0\""))
+        for r in l["rows"]:
+            yield r["id"]
+

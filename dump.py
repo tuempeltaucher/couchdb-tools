@@ -3,19 +3,22 @@ import sys, os
 import couchdb
 import time
 
-if not len(sys.argv) == 2:
-    print "$ http://localhost:5984/db"
+if len(sys.argv) < 3:
+    print "$ dump_dir http://localhost:5984/db [design]"
     sys.exit(1)
 
-uri = sys.argv[1]
-
-dump_dir = "./dump-%s" % (time.time())
-os.mkdir(dump_dir)
+dump_dir = sys.argv[1]
+uri = sys.argv[2]
 
 db = couchdb.Db(uri)
 
+if len(sys.argv) > 3 and sys.argv[3] == "design":
+    docids = db.fetch_all_design()
+else:
+    docids = db.fetch_all()
+
 n = 0
-for id in db.fetch_all():
+for id in docids:
     fname = dump_dir + "/" + id.replace("/", "#")
     data = db.get("/" + id)
     with open(fname, "wb") as fp:
