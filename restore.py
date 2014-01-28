@@ -25,15 +25,3 @@ for f in os.listdir(dump_dir):
         data = json.loads(fp.read())
         del data["_rev"]
         db.put("/" + doc_id, json.dumps(data))
-
-"""
-n = 0
-for id in db.fetch_all():
-    fname = dump_dir + "/" + id.replace("/", "#")
-    data = db.get("/" + id)
-    with open(fname, "wb") as fp:
-        fp.write(data)
-        n += 1
-
-print "saved %i documents into %s" % (n, dump_dir)
-"""
