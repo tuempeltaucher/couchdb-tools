@@ -20,7 +20,7 @@ else:
 n = 0
 for id in docids:
     fname = dump_dir + "/" + id.replace("/", "#")
-    data = db.get("/" + id)
+    data = db.getraw("/" + id)
     with open(fname, "wb") as fp:
         fp.write(data)
         n += 1

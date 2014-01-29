@@ -24,4 +24,4 @@ for f in os.listdir(dump_dir):
         db.delete("/" + doc_id)
         data = json.loads(fp.read())
         del data["_rev"]
-        db.put("/" + doc_id, json.dumps(data))
+        db.putraw("/" + doc_id, json.dumps(data))

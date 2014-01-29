@@ -31,8 +31,8 @@ class Db():
                 p = line.find("password ") + len("password ")
                 self.password = line[p:].strip()
 
-    def get_request(self, method, path):
-        request = urllib2.Request(self.uri + path)
+    def create_request(self, method, uri):
+        request = urllib2.Request(uri)
         request.get_method = lambda: method
         request.add_header("Content-Type", "application/json")
         if not self.username == None:
@@ -40,19 +40,25 @@ class Db():
             request.add_header("Authorization", "Basic %s" % base64string)
         return request
 
-    def get(self, path):
+    def get_request(self, method, path):
+        return self.create_request(method, self.uri + path)
+
+    def getraw(self, path):
         request = self.get_request("GET", path)
         res = urllib2.urlopen(request)
         return res.read()
 
-    def put(self, path, data):
+    def putraw(self, path, data):
         request = self.get_request("PUT", path)
         urllib2.urlopen(request, data)
+
+    def put(self, path, data):
+        self.putraw(path, json.dumps(data))
 
     def delete(self, path):
         doc = None
         try:
-            doc = self.get(path)
+            doc = self.getraw(path)
         except:
             pass
         if doc:
@@ -61,12 +67,60 @@ class Db():
             urllib2.urlopen(request)
 
     def fetch_all(self):
-        l = json.loads(self.get("/_all_docs"))
+        l = json.loads(self.getraw("/_all_docs"))
         for r in l["rows"]:
             yield r["id"]
 
     def fetch_all_design(self):
-        l = json.loads(self.get("/_all_docs?startkey=\"_design/\"&endkey=\"_design0\""))
+        l = json.loads(self.getraw("/_all_docs?startkey=\"_design/\"&endkey=\"_design0\""))
         for r in l["rows"]:
             yield r["id"]
 
+    def exists(self, path="/"):
+        try:
+            self.getraw(path)
+            return True
+        except:
+            return False
+
+    def create(self):
+        if not self.exists():
+            request = self.get_request("PUT", "/")
+            urllib2.urlopen(request)
+
+    def add_user(self, username, password):
+        p = self.uri.find("://")
+        uri = self.uri[0:self.uri.find("/", p+3)]
+        id = "org.couchdb.user:" + username
+
+        req = self.create_request("GET", uri + "/_users/" + id)
+        try:
+            urllib2.urlopen(req)
+            return True
+        except:
+            pass
+
+        data = dict()
+        data["_id"] = id
+        data["name"] = username
+        data["type"] = "user"
+        data["roles"] = []
+        data["password"] = password
+
+        req = self.create_request("PUT", uri + "/_users/" + id)
+        urllib2.urlopen(req, json.dumps(data))
+
+        return True
+
+    def set_dbperm(self, username):
+        data = {
+            "admins": {
+                "names": [],
+                "roles": ["_admin"],
+            },
+            "readers": {
+                "names": [username],
+                "roles": []
+            }
+        }
+        self.put("/_security", data)
