@@ -27,6 +27,14 @@ elif opcode == "add_user":
     db.add_user(param1, param2)
 elif opcode == "set_dbperm":
     db.set_dbperm(param1)
+elif opcode == "truncate_data":
+    for id in db.fetch_all():
+        if id.startswith("_design"):
+            continue
+        if param1 == None or id.startswith(param1):
+            if not param2 == None:
+                db.delete("/" + id)
+            print "deleted %s" % (id)
 else:
     print "invalid opcode"
     sys.exit(1)
